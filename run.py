@@ -153,6 +153,9 @@ def main():
         # 2. Collect assets (now the directory exists)
         if scene_dir.exists():
             files = collect_assets(scene_dir, patterns)
+            files.append(story_file)
+            files.append(project / 'assets.txt')
+            files += collect_assets(Path(project) / 'assets')
             print(f"\n  📦 Collected {len(files)} asset(s) from {scene_name}")
             
             # 3. Update catalog
