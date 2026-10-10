@@ -158,8 +158,8 @@ def main():
         if scene_dir.exists():
             files = collect_assets(scene_dir, patterns)
             files.append(story_file)
-            files.append(project / 'assets.txt')
-            files += collect_assets(Path(project) / 'assets')
+            files.append(Path(project) / 'assets.txt')
+            files += collect_assets(Path(project) / 'assets', patterns)
             print(f"\n  📦 Collected {len(files)} asset(s) from {scene_name}")
             
             # 3. Update catalog
@@ -167,7 +167,7 @@ def main():
             print(f"  📝 Updated catalog.json ({count} files for {scene_name})")
             
             # 4. Save to local output
-            save_to_local_output(files, catalog_path, output_dir / scene_name, args.dry_run)
+            save_to_local_output(files, catalog_path, Path(output_dir) / scene_name, False)
         else:
             print(f"  ⚠️  Scene directory {scene_dir} was not created by scripts")
 
