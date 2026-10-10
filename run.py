@@ -14,6 +14,10 @@ from pathlib import Path
 
 
 def run_cmd(cmd):
+    # Always use bash for .sh scripts for cross-platform consistency
+    if cmd[0].endswith('.sh'):
+        cmd = ['bash', cmd[0]] + cmd[1:]
+    
     print(f"  ▶ {' '.join(cmd)}")
     result = subprocess.run(cmd)
     if result.returncode != 0:
