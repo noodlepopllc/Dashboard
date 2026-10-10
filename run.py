@@ -123,16 +123,18 @@ def main():
     output_dir = config["pipeline"]["output_dir"]  # Changed from hf_bucket
     scenes = [s.strip() for s in config["pipeline"]["scenes"].split(",")]
     patterns = [p.strip() for p in config["collect"]["patterns"].split(",")]
-
+ 
+    force = False
     if args.scene:
-        scenes = [args.scene]
+        scenes = [f'scene{args.scene}']
+        force = True
 
     catalog_path = Path(project) / "catalog.json"
 
     for scene_name in scenes:
         scene_dir = Path(project) / scene_name
 
-        if Path(scene_dir).exists():
+        if not force and Path(scene_dir).exists():
             continue
 
         first = scene_name == scenes[0]
