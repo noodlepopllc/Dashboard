@@ -130,11 +130,14 @@ def main():
     for scene_name in scenes:
         scene_dir = Path(project) / scene_name
 
+        if Path(scene_dir).exists():
+            continue
+
         first = scene_name == scenes[0]
         
         # Check if the LLM has generated content for this scene
         # (The .story file is created by the LLM script before run.py runs)
-        story_file = Path(project) / f"{scene_name}.story"
+        story_file = Path(project) / "story" / f"{scene_name}.story"
         
         if not first and not story_file.exists():
             print(f"\n  ⏹️  Scene '{scene_name}' not yet generated.")
