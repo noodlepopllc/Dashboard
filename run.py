@@ -92,7 +92,9 @@ def save_to_local_output(files, catalog_path, output_dir, dry_run=False):
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
     
-    all_files = list(files) + [catalog_path]
+    all_files = list(files) 
+    
+    shutil.copy2(catalog_path, Path(output_dir).parent)
 
     for f in all_files:
         dest = out_path / f.name
