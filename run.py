@@ -163,7 +163,7 @@ def main():
             print(f"  📝 Updated catalog.json ({count} files for {scene_name})")
             
             # 4. Save to local output
-            save_to_local_output(files, catalog_path, output_dir, args.dry_run)
+            save_to_local_output(files, catalog_path, output_dir / scene_name, args.dry_run)
         else:
             print(f"  ⚠️  Scene directory {scene_dir} was not created by scripts")
 
