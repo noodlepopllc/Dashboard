@@ -185,7 +185,8 @@ def background_sync_loop(project, output_dir, hf_bucket, scenes, patterns, catal
             
             if new_files_found:
                 print(f"\n  🔄 [SYNC] New files detected, syncing to bucket...")
-                hf_sync(str(Path(output_dir)), hf_bucket)
+                if hf_bucket.upper() != 'FALSE':
+                    hf_sync(str(Path(output_dir)), hf_bucket)
                 print(f"  ✅ [SYNC] Bucket updated")
                 
         except Exception as e:
