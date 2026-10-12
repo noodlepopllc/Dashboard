@@ -1,9 +1,7 @@
 <?php
 declare(strict_types=1);
 /**
- * HF Pipeline Review Dashboard (Tree API Mode)
- * No catalog.json needed for rendering. 
- * Project Index dynamically finds projects by locating catalog.json files.
+ * HF Pipeline Review Dashboard (Tree API Mode) - IFRAME VIEWER
  */
 
 const DEFAULT_BUCKET = 'noodlepop/preview';
@@ -19,10 +17,9 @@ if (count($parts) !== 2) {
 $project = $_GET['project'] ?? null;
 
 // ──────────────────────────────────────────────────────────────
-// MODE 1: PROJECT DASHBOARD (when ?project=savage is provided)
+// MODE 1: PROJECT DASHBOARD
 // ──────────────────────────────────────────────────────────────
 if ($project) {
-    // Fetch the entire tree recursively
     $apiUrl = HUB . "/api/buckets/" . rawurlencode($ns) . "/" . rawurlencode($repo) . "/tree?recursive=true";
     $apiJson = @file_get_contents($apiUrl);
 
@@ -35,30 +32,28 @@ if ($project) {
 
     if (is_array($tree)) {
         foreach ($tree as $item) {
-            // We only care about actual files, not directories
             if (($item['type'] ?? '') === 'file') {
                 $path = $item['path'] ?? '';
                 
-                // 🌟 FILTER: Only include files that belong to this project
                 if (str_starts_with($path, $project . '/')) {
                     $filename = basename($path);
                     $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
                     $size = $item['size'] ?? 0;
                     
-                    // Categorize based on extension and filename
                     if (in_array($ext, ['png', 'jpg', 'jpeg', 'webp'])) {
                         $cat = 'assets';
                     } elseif (in_array($ext, ['wav', 'mp3', 'ogg'])) {
                         $cat = 'audio';
                     } elseif (in_array($ext, ['mp4', 'webm'])) {
                         $cat = 'video';
-                    } elseif ($ext === 'txt' || $ext === 'story' || $ext === 'mmh3') {
+                    } elseif ($ext === 'txt' || $ext === 'story') {
                         $cat = (strpos($filename, 'beat_') !== false || $filename === 'script.txt') ? 'prompts' : 'story';
+                    } elseif ($ext === 'json') {
+                        $cat = 'story';
                     } else {
                         $cat = 'other';
                     }
 
-                    // Extract scene name from path (e.g., "savage/scene1/output.mp4" -> "scene1")
                     $relativePath = substr($path, strlen($project) + 1);
                     $scene = explode('/', $relativePath)[0] ?? 'unknown';
 
@@ -75,7 +70,6 @@ if ($project) {
         }
     }
 
-    // Group files by category
     $groups = [
         'video'   => ['label' => '🎬 Final Shots (Video)', 'items' => []],
         'audio'   => ['label' => '🔊 Audio (Voices/Soundscapes)', 'items' => []],
@@ -91,7 +85,6 @@ if ($project) {
         }
     }
 
-    // Helper functions
     function asset_url(string $ns, string $repo, string $path): string {
         $seg = implode('/', array_map('rawurlencode', explode('/', $path)));
         return HUB . '/buckets/' . rawurlencode($ns) . '/' . rawurlencode($repo) . '/resolve/' . $seg;
@@ -128,10 +121,74 @@ if ($project) {
             .card-body { padding: 12px; text-align: center; }
             .card-body img { max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #30363d; }
             .card-body video, .card-body audio { width: 100%; border-radius: 4px; background: #000; }
-            .card-body pre { text-align: left; background: #0d1117; padding: 12px; font-size: 0.75rem; overflow-x: auto; color: #a5d6ff; white-space: pre-wrap; word-wrap: break-word; max-height: 400px; border: 1px solid #30363d; border-radius: 4px; }
             .empty-state { color: #8b949e; font-style: italic; padding: 20px; text-align: center; }
+            .view-btn { background: #21262d; border: 1px solid #30363d; color: #58a6ff; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+            .view-btn:hover { background: #30363d; border-color: #58a6ff; }
             .back-link { display: inline-block; margin-bottom: 20px; padding: 8px 16px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; text-decoration: none; }
             .back-link:hover { background: #30363d; }
+
+            /* ── IFRAME VIEWER OVERLAY ── */
+            .viewer-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 9999;
+                background: rgba(0, 0, 0, 0.85);
+                flex-direction: column;
+            }
+            .viewer-overlay.active {
+                display: flex;
+            }
+            .viewer-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 20px;
+                background: #0d1117;
+                border-bottom: 1px solid #30363d;
+                flex-shrink: 0;
+            }
+            .viewer-title {
+                font-size: 1rem;
+                font-weight: 600;
+                color: #f0f6fc;
+            }
+            .viewer-actions {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+            }
+            .viewer-btn {
+                padding: 6px 16px;
+                border-radius: 6px;
+                border: 1px solid #30363d;
+                cursor: pointer;
+                font-size: 0.85rem;
+                transition: all 0.2s;
+                text-decoration: none;
+                display: inline-block;
+            }
+            .viewer-btn-close {
+                background: #da3633;
+                border-color: #da3633;
+                color: #fff;
+            }
+            .viewer-btn-close:hover {
+                background: #f85149;
+            }
+            .viewer-btn-download {
+                background: #238636;
+                border-color: #238636;
+                color: #fff;
+            }
+            .viewer-btn-download:hover {
+                background: #2ea043;
+            }
+            .viewer-frame {
+                flex: 1;
+                border: none;
+                background: #fff;
+            }
         </style>
     </head>
     <body>
@@ -170,19 +227,11 @@ if ($project) {
                                 <video controls preload="metadata"><source src="<?= htmlspecialchars($url) ?>"></video>
                             <?php elseif (in_array($ext, ['wav', 'mp3', 'ogg'])): ?>
                                 <audio controls preload="metadata"><source src="<?= htmlspecialchars($url) ?>"></audio>
-                            <?php elseif (in_array($ext, ['txt', 'json', 'story', 'mmh3'])): ?>
-                                <?php 
-                                $textContent = @file_get_contents($url);
-                                if ($textContent !== false) {
-                                    $displayText = strlen($textContent) > 4000 ? substr($textContent, 0, 4000) . "\n\n... [truncated]" : $textContent;
-                                    echo '<pre>' . htmlspecialchars($displayText) . '</pre>';
-                                } else {
-                                    echo '<div class="empty-state">Preview unavailable. <a href="' . htmlspecialchars($url) . '" target="_blank" style="color:#58a6ff">Open file</a></div>';
-                                }
-                                ?>
+                            <?php elseif (in_array($ext, ['txt', 'json', 'story'])): ?>
+                                <button class="view-btn" onclick="showViewer('<?= htmlspecialchars($url, ENT_QUOTES) ?>', '<?= htmlspecialchars($f['name'], ENT_QUOTES) ?>')">📄 View File</button>
                             <?php else: ?>
                                 <div class="empty-state">
-                                    <a href="<?= htmlspecialchars($url) ?>" target="_blank" style="color:#58a6ff">Download / Open File</a>
+                                    <a href="<?= htmlspecialchars($url) ?>" target="_blank" style="color:#58a6ff">📄 Download File</a>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -190,6 +239,37 @@ if ($project) {
                 <?php endforeach; ?>
             </div>
         <?php endforeach; ?>
+
+        <!-- ── IFRAME VIEWER ── -->
+        <div class="viewer-overlay" id="viewerOverlay">
+            <div class="viewer-bar">
+                <div class="viewer-title" id="viewerTitle">File</div>
+                <div class="viewer-actions">
+                    <a id="viewerDownload" href="#" class="viewer-btn viewer-btn-download" download>⬇ Download</a>
+                    <button class="viewer-btn viewer-btn-close" onclick="hideViewer()">✕ Close</button>
+                </div>
+            </div>
+            <iframe class="viewer-frame" id="viewerFrame"></iframe>
+        </div>
+
+        <script>
+            function showViewer(url, filename) {
+                document.getElementById('viewerTitle').textContent = filename;
+                document.getElementById('viewerDownload').href = url;
+                document.getElementById('viewerDownload').download = filename;
+                document.getElementById('viewerFrame').src = url;
+                document.getElementById('viewerOverlay').classList.add('active');
+            }
+
+            function hideViewer() {
+                document.getElementById('viewerOverlay').classList.remove('active');
+                document.getElementById('viewerFrame').src = '';
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') hideViewer();
+            });
+        </script>
     </body>
     </html>
     <?php
@@ -197,10 +277,10 @@ if ($project) {
 }
 
 // ──────────────────────────────────────────────────────────────
-// MODE 2: PROJECT INDEX (when ?project is NOT provided)
+// MODE 2: PROJECT INDEX
 // ──────────────────────────────────────────────────────────────
-
-// Fetch the recursive tree to find where catalog.json files live
+// We use recursive=true here to reliably find catalog.json files. 
+// This is the single source of truth for what constitutes a "project".
 $apiUrl = HUB . "/api/buckets/" . rawurlencode($ns) . "/" . rawurlencode($repo) . "/tree?recursive=true";
 $apiJson = @file_get_contents($apiUrl);
 
@@ -213,14 +293,13 @@ $projects = [];
 
 if (is_array($tree)) {
     foreach ($tree as $item) {
-        // We only care about files named catalog.json (or context.json if your pipeline uses that)
+        // Look specifically for catalog.json (or context.json)
         if (($item['type'] ?? '') === 'file') {
             $path = $item['path'] ?? '';
             $filename = basename($path);
             
             if ($filename === 'catalog.json' || $filename === 'context.json') {
                 $projectDir = dirname($path);
-                
                 // Ignore if it's at the root level ('.'), we want subdirectories like 'savage'
                 if ($projectDir !== '.' && !in_array($projectDir, $projects)) {
                     $projects[] = $projectDir;
@@ -260,7 +339,7 @@ sort($projects);
 
     <?php if (empty($projects)): ?>
         <div class="empty-state">
-            No projects found.<br>
+            No project directories found.<br>
             Make sure the Python pipeline has run and synced at least one project containing a <code>catalog.json</code> file.<br>
             <br>
             Or manually visit: <a href="?bucket=<?= urlencode($bucket) ?>&project=savage" style="color:#58a6ff">?project=savage</a>
