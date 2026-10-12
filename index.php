@@ -46,10 +46,8 @@ if ($project) {
                         $cat = 'audio';
                     } elseif (in_array($ext, ['mp4', 'webm'])) {
                         $cat = 'video';
-                    } elseif ($ext === 'txt' || $ext === 'story') {
+                    } elseif ($ext === 'txt' || $ext === 'story' || $ext === 'mmh3') {
                         $cat = (strpos($filename, 'beat_') !== false || $filename === 'script.txt') ? 'prompts' : 'story';
-                    } elseif ($ext === 'json') {
-                        $cat = 'story';
                     } else {
                         $cat = 'other';
                     }
@@ -227,7 +225,7 @@ if ($project) {
                                 <video controls preload="metadata"><source src="<?= htmlspecialchars($url) ?>"></video>
                             <?php elseif (in_array($ext, ['wav', 'mp3', 'ogg'])): ?>
                                 <audio controls preload="metadata"><source src="<?= htmlspecialchars($url) ?>"></audio>
-                            <?php elseif (in_array($ext, ['txt', 'json', 'story'])): ?>
+                            <?php elseif (in_array($ext, ['txt', 'story', 'mmh3'])): ?>
                                 <button class="view-btn" onclick="showViewer('<?= htmlspecialchars($url, ENT_QUOTES) ?>', '<?= htmlspecialchars($f['name'], ENT_QUOTES) ?>')">📄 View File</button>
                             <?php else: ?>
                                 <div class="empty-state">
