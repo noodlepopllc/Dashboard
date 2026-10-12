@@ -186,7 +186,7 @@ def background_sync_loop(project, output_dir, hf_bucket, scenes, patterns, catal
             if new_files_found:
                 print(f"\n  🔄 [SYNC] New files detected, syncing to bucket...")
                 if hf_bucket.upper() != 'FALSE':
-                    hf_sync(str(Path(output_dir)), hf_bucket)
+                    hf_sync(str(Path(output_dir).parent), hf_bucket)
                 print(f"  ✅ [SYNC] Bucket updated")
                 
         except Exception as e:
@@ -217,7 +217,7 @@ def background_sync_loop(project, output_dir, hf_bucket, scenes, patterns, catal
             
     print(f"  🔄 [SYNC] Syncing to bucket (Final)...")
     if hf_bucket.upper() != 'FALSE':
-        hf_sync(str(Path(output_dir)), hf_bucket)
+        hf_sync(str(Path(output_dir).parent), hf_bucket)
     print(f"  ✅ [SYNC] Final sync complete")
 
 def main():
@@ -234,7 +234,7 @@ def main():
 
     project = config["pipeline"]["project"]
     input_file = config["pipeline"]["input_file"]
-    output_dir = config["pipeline"]["output_dir"]
+    output_dir = Path(config["pipeline"]["output_dir"]) / project 
     scenes = [s.strip() for s in config["pipeline"]["scenes"].split(",")]
     patterns = [p.strip() for p in config["collect"]["patterns"].split(",")]
     hf_bucket = config["pipeline"]["hf_bucket"]
