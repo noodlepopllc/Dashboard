@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 /**
- * HF Pipeline Review Dashboard (Tree API Mode) - IFRAME VIEWER
+ * HF Pipeline Review Dashboard (Tree API Mode) - IFRAME VIEWER WITH MIME FIX
  */
 
 const DEFAULT_BUCKET = 'noodlepop/preview';
@@ -255,13 +255,44 @@ if ($project) {
                 document.getElementById('viewerTitle').textContent = filename;
                 document.getElementById('viewerDownload').href = url;
                 document.getElementById('viewerDownload').download = filename;
-                document.getElementById('viewerFrame').src = url;
+                
+                const frame = document.getElementById('viewerFrame');
+                const ext = filename.split('.').pop().toLowerCase();
+                
+                // 🌟 MIME FIX: For text files, fetch and inject as srcdoc to force plain text rendering
+                if (ext === 'txt' || ext === 'story' || ext === 'mmh3') {
+                    frame.srcdoc = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;font-family:system-ui;">Loading text...</div>';
+                    
+                    fetch(url)
+                        .then(response => {
+                            if (!response.ok) throw new Error('Network response was not ok');
+                            return response.text();
+                        })
+                        .then(text => {
+                            // Escape HTML to prevent any rendering issues
+                            const escaped = text
+                                .replace(/&/g, "&amp;")
+                                .replace(/</g, "&lt;")
+                                .replace(/>/g, "&gt;");
+                            
+                            // Inject as formatted, readable plain text
+                            frame.srcdoc = `<pre style="margin:0; padding:20px; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:14px; line-height:1.5; color:#1f2328; background:#ffffff; white-space:pre-wrap; word-wrap:break-word;">${escaped}</pre>`;
+                        })
+                        .catch(err => {
+                            frame.srcdoc = `<div style="padding:20px; color:#d1242f; font-family:system-ui;">Error loading file: ${err.message}<br><br><a href="${url}" target="_blank" style="color:#0969da;">Open directly</a></div>`;
+                        });
+                } else {
+                    // For images, videos, audio, etc., just use the URL directly
+                    frame.src = url;
+                }
+                
                 document.getElementById('viewerOverlay').classList.add('active');
             }
 
             function hideViewer() {
                 document.getElementById('viewerOverlay').classList.remove('active');
                 document.getElementById('viewerFrame').src = '';
+                document.getElementById('viewerFrame').srcdoc = '';
             }
 
             document.addEventListener('keydown', function(e) {
@@ -277,8 +308,6 @@ if ($project) {
 // ──────────────────────────────────────────────────────────────
 // MODE 2: PROJECT INDEX
 // ──────────────────────────────────────────────────────────────
-// We use recursive=true here to reliably find catalog.json files. 
-// This is the single source of truth for what constitutes a "project".
 $apiUrl = HUB . "/api/buckets/" . rawurlencode($ns) . "/" . rawurlencode($repo) . "/tree?recursive=true";
 $apiJson = @file_get_contents($apiUrl);
 
@@ -291,14 +320,12 @@ $projects = [];
 
 if (is_array($tree)) {
     foreach ($tree as $item) {
-        // Look specifically for catalog.json (or context.json)
         if (($item['type'] ?? '') === 'file') {
             $path = $item['path'] ?? '';
             $filename = basename($path);
             
             if ($filename === 'catalog.json' || $filename === 'context.json') {
                 $projectDir = dirname($path);
-                // Ignore if it's at the root level ('.'), we want subdirectories like 'savage'
                 if ($projectDir !== '.' && !in_array($projectDir, $projects)) {
                     $projects[] = $projectDir;
                 }
